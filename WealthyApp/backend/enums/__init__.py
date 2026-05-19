@@ -1,0 +1,1 @@
+from WealthyApp.backend.enums.asset import AssetType, IkeIkzeType

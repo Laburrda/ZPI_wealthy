@@ -1,0 +1,129 @@
+
+<div id="erd" style="padding: 1rem 0"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+  },
+});
+const diagram = `erDiagram
+  users {
+    int id PK
+    string email
+    string hashed_password
+    string full_name
+    datetime created_at
+    datetime updated_at
+  }
+  assets {
+    int id PK
+    int user_id FK
+    string asset_type
+    string name
+    string currency
+    datetime created_at
+    datetime updated_at
+  }
+  savings_accounts {
+    int asset_id PK
+    string institution_name
+    float interest_rate
+    float current_balance
+    datetime balance_synced_at
+  }
+  ppk_accounts {
+    int asset_id PK
+    string institution_name
+    string fund_name
+    float employee_rate
+    float employer_rate
+    float current_value
+    datetime value_updated_at
+  }
+  ike_accounts {
+    int asset_id PK
+    string institution_name
+    string account_subtype
+    float annual_limit
+    float annual_contributed
+    float cash_balance
+    datetime balance_synced_at
+  }
+  crypto_wallets {
+    int asset_id PK
+    string institution_name
+    string wallet_address
+    float current_value
+    datetime value_updated_at
+  }
+  holdings {
+    int id PK
+    int user_id FK
+    int ike_account_id FK
+    string ticker
+    string name
+    string asset_class
+    float quantity
+    float avg_purchase_price
+    float current_price
+    datetime entry_date
+    datetime last_price_update
+  }
+  bond_details {
+    int holding_id PK
+    float face_value
+    float coupon_rate
+    date maturity_date
+    string issuer
+  }
+  cfd_details {
+    int holding_id PK
+    float leverage
+    float margin_used
+    string direction
+  }
+  users ||--o{ assets : "owns"
+  assets ||--o| savings_accounts : "extends"
+  assets ||--o| ppk_accounts : "extends"
+  assets ||--o| ike_accounts : "extends"
+  assets ||--o| crypto_wallets : "extends"
+  users ||--o{ holdings : "owns"
+  ike_accounts ||--o{ holdings : "contains"
+  holdings ||--o| bond_details : "extends"
+  holdings ||--o| cfd_details : "extends"
+`;
+const { svg } = await mermaid.render('erd-svg', diagram);
+document.getElementById('erd').innerHTML = svg;
+document.querySelectorAll('#erd svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+document.querySelectorAll('#erd svg .row-rect-odd path, #erd svg .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>
