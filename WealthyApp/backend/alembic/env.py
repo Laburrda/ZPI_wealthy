@@ -8,8 +8,14 @@ from alembic import context
 from database import Base
 
 from models.user import User
-from models.asset import Asset, SavingsAccount, PPKAccount, IKEAccount, CryptoWallet
-from models.holding import Holding, BondDetails, CFDDetails
+from models.asset import Asset
+from models.saving_account import SavingsAccount
+from models.ppk_account import PPKAccount
+from models.ike_ikze_account import IKEAccount
+from models.crypto_wallet import CryptoWallet
+from models.holding import Holding
+from models.bond_details import BondDetails
+from models.cdf_details import CFDDetails
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

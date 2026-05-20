@@ -1,2 +1,5 @@
 # Virtual Machine
 .venv/
+
+# Python cache
+__pycache__/

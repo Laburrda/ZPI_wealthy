@@ -17,7 +17,7 @@ class Holding(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     asset_class: Mapped[AssetClass] = mapped_column(Enum(AssetClass), nullable=False)
     quantity: Mapped[float] = mapped_column(nullable=False)
-    avg_purchase_price: Mapped[float] = mapped_column(nulalble=False)
+    avg_purchase_price: Mapped[float] = mapped_column(nullable=False)
     current_price: Mapped[float] = mapped_column(nullable=False, server_default="0")
     entry_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False, server_default=func.now())
     last_price_update: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
