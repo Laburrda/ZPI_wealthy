@@ -15,13 +15,14 @@ class IKEAccount(Base):
     )
 
     # Attributes
-    institution_name: Mapped[str] = mapped_column(String(100), nulalble=False)
-    account_subtype: Mapped[IkeIkzeType] = mapped_column(Enum(IkeIkzeType), nulalble=False)
+    institution_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    account_subtype: Mapped[IkeIkzeType] = mapped_column(Enum(IkeIkzeType), nullable=False)
     annual_limit: Mapped[float] = mapped_column(nullable=False)
     annual_contributed: Mapped[float] = mapped_column(nullable=False, server_default="0")
     cash_balance: Mapped[float] = mapped_column(nullable=False)
-    value_updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    balance_updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
     # Relations
     # TODO: confirm names in relations
-    asset: Mapped["Asset"] = relationship(back_populates="ike_accounts")
+    asset: Mapped["Asset"] = relationship(back_populates="ike_account")
+    holdings: Mapped[list["Holding"]] = relationship(back_populates="ike_account")

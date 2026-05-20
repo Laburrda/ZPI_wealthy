@@ -1,5 +1,5 @@
 from sqlalchemy import String, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from database import Base
@@ -14,3 +14,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    # Relations
+    assets: Mapped[list["Asset"]] = relationship(back_populates="user")
+    holdings: Mapped[list["Holding"]] = relationship(back_populates="user")

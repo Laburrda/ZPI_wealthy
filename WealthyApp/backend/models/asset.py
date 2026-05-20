@@ -19,7 +19,7 @@ class Asset(Base):
     updated_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relations
-    # LEARN: to come back to relations and pylance/pydentic
+    user: Mapped["User"] = relationship(back_populates="assets")
     savings_account: Mapped["SavingsAccount"] = relationship(back_populates="asset", uselist=False)
     ppk_account: Mapped["PPKAccount"] = relationship(back_populates="asset", uselist=False)
     ike_account: Mapped["IKEAccount"] = relationship(back_populates="asset", uselist=False)

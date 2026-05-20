@@ -1,1 +1,1 @@
-from WealthyApp.backend.enums.asset import AssetType, IkeIkzeType
+from WealthyApp.backend.enums.asset import AssetType, IkeIkzeType, AssetClass, CFDDirection
