@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 class SavingsAccount(Base):
-    __tablename__: str = "saving_accounts"
+    __tablename__: str = "savings_accounts"
 
     # Architecture Pattern - Join Table Inheritance 
     asset_id: Mapped[int] = mapped_column(

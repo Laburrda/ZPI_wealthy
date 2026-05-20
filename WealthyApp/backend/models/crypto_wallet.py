@@ -15,7 +15,7 @@ class CryptoWallet(Base):
     # Attributes
     # TODO: come back to increment - should salary be included? how I can forecast the ppk acc in next years?
     institution_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    wallet_adress: Mapped[str] = mapped_column(String(255))
+    wallet_address: Mapped[str] = mapped_column(String(255))
     current_value: Mapped[float] = mapped_column(nullable=False, server_default="0")
     value_updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 

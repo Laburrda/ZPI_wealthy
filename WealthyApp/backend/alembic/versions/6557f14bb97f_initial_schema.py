@@ -1,8 +1,8 @@
 """Initial schema
 
-Revision ID: 7d79edea19f3
+Revision ID: 6557f14bb97f
 Revises: 
-Create Date: 2026-05-20 21:20:26.718613
+Create Date: 2026-05-20 21:34:07.937084
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '7d79edea19f3'
+revision: str = '6557f14bb97f'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,9 +41,50 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('crypto_wallets',
+    sa.Column('asset_id', sa.Integer(), nullable=False),
+    sa.Column('institution_name', sa.String(length=100), nullable=False),
+    sa.Column('wallet_address', sa.String(length=255), nullable=False),
+    sa.Column('current_value', sa.Float(), server_default='0', nullable=False),
+    sa.Column('value_updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('asset_id')
+    )
+    op.create_table('ike_accounts',
+    sa.Column('asset_id', sa.Integer(), nullable=False),
+    sa.Column('institution_name', sa.String(length=100), nullable=False),
+    sa.Column('account_subtype', sa.Enum('IKE', 'IKZE', name='ikeikzetype'), nullable=False),
+    sa.Column('annual_limit', sa.Float(), nullable=False),
+    sa.Column('annual_contributed', sa.Float(), server_default='0', nullable=False),
+    sa.Column('cash_balance', sa.Float(), server_default='0', nullable=False),
+    sa.Column('balance_synced_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('asset_id')
+    )
+    op.create_table('ppk_accounts',
+    sa.Column('asset_id', sa.Integer(), nullable=False),
+    sa.Column('institution_name', sa.String(length=100), nullable=False),
+    sa.Column('fund_name', sa.String(length=150), nullable=False),
+    sa.Column('employee_rate', sa.Float(), server_default='2.0', nullable=False),
+    sa.Column('employer_rate', sa.Float(), server_default='1.5', nullable=False),
+    sa.Column('current_value', sa.Float(), server_default='0', nullable=False),
+    sa.Column('value_updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('asset_id')
+    )
+    op.create_table('savings_accounts',
+    sa.Column('asset_id', sa.Integer(), nullable=False),
+    sa.Column('institution_name', sa.String(length=100), nullable=False),
+    sa.Column('interest_rate', sa.Float(), nullable=False),
+    sa.Column('current_balance', sa.Float(), server_default='0', nullable=False),
+    sa.Column('balance_synced_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('asset_id')
+    )
     op.create_table('holdings',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('ike_account_id', sa.Integer(), nullable=False),
     sa.Column('ticker', sa.String(length=20), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('asset_class', sa.Enum('STOCK', 'ETF', 'BOND', 'CFD', 'CRYPTO', name='assetclass'), nullable=False),
@@ -52,6 +93,7 @@ def upgrade() -> None:
     sa.Column('current_price', sa.Float(), server_default='0', nullable=False),
     sa.Column('entry_date', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('last_price_update', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['ike_account_id'], ['ike_accounts.asset_id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -72,58 +114,18 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['holding_id'], ['holdings.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('holding_id')
     )
-    op.create_table('crypto_wallets',
-    sa.Column('asset_id', sa.Integer(), nullable=False),
-    sa.Column('institution_name', sa.String(length=100), nullable=False),
-    sa.Column('wallet_adress', sa.String(length=255), nullable=False),
-    sa.Column('current_value', sa.Float(), server_default='0', nullable=False),
-    sa.Column('value_updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('asset_id')
-    )
-    op.create_table('ike_accounts',
-    sa.Column('asset_id', sa.Integer(), nullable=False),
-    sa.Column('institution_name', sa.String(length=100), nullable=False),
-    sa.Column('account_subtype', sa.Enum('IKE', 'IKZE', name='ikeikzetype'), nullable=False),
-    sa.Column('annual_limit', sa.Float(), nullable=False),
-    sa.Column('annual_contributed', sa.Float(), server_default='0', nullable=False),
-    sa.Column('cash_balance', sa.Float(), nullable=False),
-    sa.Column('balance_updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('asset_id')
-    )
-    op.create_table('ppk_accounts',
-    sa.Column('asset_id', sa.Integer(), nullable=False),
-    sa.Column('institution_name', sa.String(length=100), nullable=False),
-    sa.Column('fund_name', sa.String(length=150), nullable=False),
-    sa.Column('employee_rate', sa.Float(), server_default='2.0', nullable=False),
-    sa.Column('employer_rate', sa.Float(), server_default='1.5', nullable=False),
-    sa.Column('current_value', sa.Float(), server_default='0', nullable=False),
-    sa.Column('value_updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('asset_id')
-    )
-    op.create_table('saving_accounts',
-    sa.Column('asset_id', sa.Integer(), nullable=False),
-    sa.Column('institution_name', sa.String(length=100), nullable=False),
-    sa.Column('interest_rate', sa.Float(), nullable=False),
-    sa.Column('current_balance', sa.Float(), server_default='0', nullable=False),
-    sa.Column('balance_synced_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('asset_id')
-    )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('saving_accounts')
-    op.drop_table('ppk_accounts')
-    op.drop_table('ike_accounts')
-    op.drop_table('crypto_wallets')
     op.drop_table('cfd_details')
     op.drop_table('bond_details')
     op.drop_table('holdings')
+    op.drop_table('savings_accounts')
+    op.drop_table('ppk_accounts')
+    op.drop_table('ike_accounts')
+    op.drop_table('crypto_wallets')
     op.drop_table('assets')
     op.drop_table('users')
     # ### end Alembic commands ###

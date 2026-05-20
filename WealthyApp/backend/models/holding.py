@@ -12,7 +12,7 @@ class Holding(Base):
     # Attributes
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    ike_account: Mapped[int | None] = mapped_column(ForeignKey("asset.id", ondelete="CASCADE"), nullable=False)
+    ike_account_id: Mapped[int | None] = mapped_column(ForeignKey("ike_accounts.asset_id", ondelete="CASCADE"), nullable=False)
     ticker: Mapped[str] = mapped_column(String(20), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     asset_class: Mapped[AssetClass] = mapped_column(Enum(AssetClass), nullable=False)
@@ -24,6 +24,6 @@ class Holding(Base):
 
     # Relations
     user: Mapped["User"] = relationship(back_populates="holdings")
-    ike_account: Mapped["IKEAcount | None"] = relationship(back_populates="holdings")
-    bond_details: Mapped["BondDetails"] = relationship(back_populates="holdings", uselist=False)
-    cfd_details: Mapped["CFDDetails"] = relationship(back_populates="holdings", uselist=False)
+    ike_account: Mapped["IKEAccount | None"] = relationship(back_populates="holdings")
+    bond_details: Mapped["BondDetails"] = relationship(back_populates="holding", uselist=False)
+    cfd_details: Mapped["CFDDetails"] = relationship(back_populates="holding", uselist=False)

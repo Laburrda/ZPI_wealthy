@@ -19,8 +19,8 @@ class IKEAccount(Base):
     account_subtype: Mapped[IkeIkzeType] = mapped_column(Enum(IkeIkzeType), nullable=False)
     annual_limit: Mapped[float] = mapped_column(nullable=False)
     annual_contributed: Mapped[float] = mapped_column(nullable=False, server_default="0")
-    cash_balance: Mapped[float] = mapped_column(nullable=False)
-    balance_updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    cash_balance: Mapped[float] = mapped_column(nullable=False, server_default="0")
+    balance_synced_at: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
     # Relations
     # TODO: confirm names in relations
