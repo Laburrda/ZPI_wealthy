@@ -20,7 +20,7 @@ class Asset(Base):
 
     # Relations
     user: Mapped["User"] = relationship(back_populates="assets")
-    savings_account: Mapped["SavingsAccount"] = relationship(back_populates="asset", uselist=False)
-    ppk_account: Mapped["PPKAccount"] = relationship(back_populates="asset", uselist=False)
-    ike_account: Mapped["IKEAccount"] = relationship(back_populates="asset", uselist=False)
-    crypto_wallet: Mapped["CryptoWallet"] = relationship(back_populates="asset", uselist=False)
+    savings_account: Mapped["SavingsAccount"] = relationship(back_populates="asset", uselist=False, cascade="all, delete-orphan")
+    ppk_account: Mapped["PPKAccount"] = relationship(back_populates="asset", uselist=False, cascade="all, delete-orphan")
+    ike_account: Mapped["IKEAccount"] = relationship(back_populates="asset", uselist=False, cascade="all, delete-orphan")
+    crypto_wallet: Mapped["CryptoWallet"] = relationship(back_populates="asset", uselist=False, cascade="all, delete-orphan")
