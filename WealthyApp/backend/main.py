@@ -2,7 +2,7 @@ import importlib
 import pkgutil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import savings
+from routers import savings, ppk, ike_ikze, crypto, holdings
 
 # Automatyczne ładowanie wszystkich modeli bazy danych na starcie aplikacji,
 # aby zapobiec błędom relacji w SQLAlchemy (np. z brakiem klas User, PPKAccount itp.)
@@ -42,3 +42,8 @@ def root():
 # TODO: w miarę dodawania kolejnych typów aktywów (ppk, ike, ikze, crypto, holdings)
 # i kalkulatora emerytalnego — dopisujemy kolejne include_router tutaj.
 app.include_router(savings.router)
+app.include_router(ppk.router)
+app.include_router(ike_ikze.ike_router)
+app.include_router(ike_ikze.ikze_router)
+app.include_router(crypto.router)
+app.include_router(holdings.router)
