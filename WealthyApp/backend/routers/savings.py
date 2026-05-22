@@ -6,17 +6,10 @@ from models.saving_account import SavingsAccount
 from schemas.asset import SavingsAccountCreate, SavingsAccountResponse
 from services import savings_service
 
+from models.user import User
+from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/assets/savings", tags=["Savings"])
-
-
-# === ZAŚLEPKA AUTORYZACJI ===
-# TODO: Zastąpić importem z auth/, kiedy DEV A skończy JWT.
-# Wtedy ten endpoint będzie wyciągał user_id z tokena Bearer.
-def get_current_user_id() -> int:
-    """Tymczasowo zwraca user_id=1, żeby nie blokować pracy DEV B."""
-    return 1
-
 
 # === HELPER ===
 # Mapuje obiekt ORM (SavingsAccount + relacja .asset) na płaski dict,
@@ -49,9 +42,9 @@ def _to_response(savings: SavingsAccount) -> dict:
 def create_savings_account_endpoint(
     data: SavingsAccountCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    savings = savings_service.create_savings_account(db, user_id=user_id, data=data)
+    savings = savings_service.create_savings_account(db, user_id=current_user.id, data=data)
     return _to_response(savings)
 
 
@@ -62,9 +55,9 @@ def create_savings_account_endpoint(
 )
 def list_savings_accounts_endpoint(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    accounts = savings_service.list_savings_accounts(db, user_id=user_id)
+    accounts = savings_service.list_savings_accounts(db, user_id=current_user.id)
     return [_to_response(a) for a in accounts]
 
 
@@ -76,9 +69,9 @@ def list_savings_accounts_endpoint(
 def get_savings_account_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    savings = savings_service.get_savings_account(db, user_id=user_id, asset_id=asset_id)
+    savings = savings_service.get_savings_account(db, user_id=current_user.id, asset_id=asset_id)
     return _to_response(savings)
 
 
@@ -90,9 +83,9 @@ def get_savings_account_endpoint(
 def delete_savings_account_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    savings_service.delete_savings_account(db, user_id=user_id, asset_id=asset_id)
+    savings_service.delete_savings_account(db, user_id=current_user.id, asset_id=asset_id)
 
 
 # TODO: PUT /{asset_id} - czeka na SavingsAccountUpdate w schemas/asset.py

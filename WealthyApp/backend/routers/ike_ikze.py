@@ -9,17 +9,13 @@ from schemas.asset import (
 )
 from services import ike_ikze_service
 
+from models.user import User
+from services.auth_service import get_current_user
+
 
 # Dwa osobne routery - każdy ze swoim prefixem i tagiem
 ike_router = APIRouter(prefix="/assets/ike", tags=["IKE"])
 ikze_router = APIRouter(prefix="/assets/ikze", tags=["IKZE"])
-
-
-# === ZAŚLEPKA AUTORYZACJI ===
-# TODO: Zastąpić importem z auth/, kiedy DEV A skończy JWT.
-def get_current_user_id() -> int:
-    return 1
-
 
 # === HELPER (wspólny dla IKE i IKZE - kształt response identyczny) ===
 def _to_response(ike: IKEAccount) -> dict:
@@ -52,9 +48,9 @@ def _to_response(ike: IKEAccount) -> dict:
 def create_ike_endpoint(
     data: IKEAccountCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ike = ike_ikze_service.create_ike_account(db, user_id=user_id, data=data)
+    ike = ike_ikze_service.create_ike_account(db, user_id=current_user.id, data=data)
     return _to_response(ike)
 
 
@@ -65,9 +61,9 @@ def create_ike_endpoint(
 )
 def list_ike_endpoint(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    accounts = ike_ikze_service.list_ike_accounts(db, user_id=user_id)
+    accounts = ike_ikze_service.list_ike_accounts(db, user_id=current_user.id)
     return [_to_response(a) for a in accounts]
 
 
@@ -79,9 +75,9 @@ def list_ike_endpoint(
 def get_ike_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ike = ike_ikze_service.get_ike_account(db, user_id=user_id, asset_id=asset_id)
+    ike = ike_ikze_service.get_ike_account(db, user_id=current_user.id, asset_id=asset_id)
     return _to_response(ike)
 
 
@@ -93,9 +89,9 @@ def get_ike_endpoint(
 def delete_ike_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ike_ikze_service.delete_ike_account(db, user_id=user_id, asset_id=asset_id)
+    ike_ikze_service.delete_ike_account(db, user_id=current_user.id, asset_id=asset_id)
 
 
 # =========================================================
@@ -111,9 +107,9 @@ def delete_ike_endpoint(
 def create_ikze_endpoint(
     data: IKZEAccountCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ikze = ike_ikze_service.create_ikze_account(db, user_id=user_id, data=data)
+    ikze = ike_ikze_service.create_ikze_account(db, user_id=current_user.id, data=data)
     return _to_response(ikze)
 
 
@@ -124,9 +120,9 @@ def create_ikze_endpoint(
 )
 def list_ikze_endpoint(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    accounts = ike_ikze_service.list_ikze_accounts(db, user_id=user_id)
+    accounts = ike_ikze_service.list_ikze_accounts(db, user_id=current_user.id)
     return [_to_response(a) for a in accounts]
 
 
@@ -138,9 +134,9 @@ def list_ikze_endpoint(
 def get_ikze_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ikze = ike_ikze_service.get_ikze_account(db, user_id=user_id, asset_id=asset_id)
+    ikze = ike_ikze_service.get_ikze_account(db, user_id=current_user.id, asset_id=asset_id)
     return _to_response(ikze)
 
 
@@ -152,9 +148,9 @@ def get_ikze_endpoint(
 def delete_ikze_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ike_ikze_service.delete_ikze_account(db, user_id=user_id, asset_id=asset_id)
+    ike_ikze_service.delete_ikze_account(db, user_id=current_user.id, asset_id=asset_id)
 
 
 # TODO: PUT - czeka na IKEAccountUpdate / IKZEAccountUpdate w schemas/asset.py

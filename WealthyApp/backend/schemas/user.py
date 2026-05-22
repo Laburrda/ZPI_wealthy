@@ -19,3 +19,7 @@ class UserUpdate(BaseModel):
     # email: EmailStr | None = None # TODO: consider option of changing email with full validation and authentication
     full_name: str | None = None
     password: str | None = None
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

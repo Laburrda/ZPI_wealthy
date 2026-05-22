@@ -6,15 +6,10 @@ from models.crypto_wallet import CryptoWallet
 from schemas.asset import CryptoWalletCreate, CryptoWalletResponse
 from services import crypto_service
 
+from models.user import User
+from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/assets/crypto", tags=["Crypto"])
-
-
-# === ZAŚLEPKA AUTORYZACJI ===
-# TODO: Zastąpić importem z auth/, kiedy DEV A skończy JWT.
-def get_current_user_id() -> int:
-    return 1
-
 
 # === HELPER ===
 def _to_response(wallet: CryptoWallet) -> dict:
@@ -43,9 +38,9 @@ def _to_response(wallet: CryptoWallet) -> dict:
 def create_crypto_endpoint(
     data: CryptoWalletCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    wallet = crypto_service.create_crypto_wallet(db, user_id=user_id, data=data)
+    wallet = crypto_service.create_crypto_wallet(db, user_id=current_user.id, data=data)
     return _to_response(wallet)
 
 
@@ -56,9 +51,9 @@ def create_crypto_endpoint(
 )
 def list_crypto_endpoint(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    wallets = crypto_service.list_crypto_wallets(db, user_id=user_id)
+    wallets = crypto_service.list_crypto_wallets(db, user_id=current_user.id)
     return [_to_response(w) for w in wallets]
 
 
@@ -70,9 +65,9 @@ def list_crypto_endpoint(
 def get_crypto_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    wallet = crypto_service.get_crypto_wallet(db, user_id=user_id, asset_id=asset_id)
+    wallet = crypto_service.get_crypto_wallet(db, user_id=current_user.id, asset_id=asset_id)
     return _to_response(wallet)
 
 
@@ -84,9 +79,9 @@ def get_crypto_endpoint(
 def delete_crypto_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    crypto_service.delete_crypto_wallet(db, user_id=user_id, asset_id=asset_id)
+    crypto_service.delete_crypto_wallet(db, user_id=current_user.id, asset_id=asset_id)
 
 
 # TODO: PUT - czeka na CryptoWalletUpdate w schemas/asset.py

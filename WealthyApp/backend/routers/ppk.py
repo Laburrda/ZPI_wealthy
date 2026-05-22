@@ -6,14 +6,10 @@ from models.ppk_account import PPKAccount
 from schemas.asset import PPKAccountCreate, PPKAccountResponse
 from services import ppk_service
 
+from models.user import User
+from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/assets/ppk", tags=["PPK"])
-
-
-# === ZAŚLEPKA AUTORYZACJI ===
-# TODO: Zastąpić importem z auth/, kiedy DEV A skończy JWT.
-def get_current_user_id() -> int:
-    return 1
 
 
 # === HELPER ===
@@ -46,9 +42,9 @@ def _to_response(ppk: PPKAccount) -> dict:
 def create_ppk_account_endpoint(
     data: PPKAccountCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ppk = ppk_service.create_ppk_account(db, user_id=user_id, data=data)
+    ppk = ppk_service.create_ppk_account(db, user_id=current_user.id, data=data)
     return _to_response(ppk)
 
 
@@ -59,9 +55,9 @@ def create_ppk_account_endpoint(
 )
 def list_ppk_accounts_endpoint(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    accounts = ppk_service.list_ppk_accounts(db, user_id=user_id)
+    accounts = ppk_service.list_ppk_accounts(db, user_id=current_user.id)
     return [_to_response(a) for a in accounts]
 
 
@@ -73,9 +69,9 @@ def list_ppk_accounts_endpoint(
 def get_ppk_account_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ppk = ppk_service.get_ppk_account(db, user_id=user_id, asset_id=asset_id)
+    ppk = ppk_service.get_ppk_account(db, user_id=current_user.id, asset_id=asset_id)
     return _to_response(ppk)
 
 
@@ -87,9 +83,9 @@ def get_ppk_account_endpoint(
 def delete_ppk_account_endpoint(
     asset_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    ppk_service.delete_ppk_account(db, user_id=user_id, asset_id=asset_id)
+    ppk_service.delete_ppk_account(db, user_id=current_user.id, asset_id=asset_id)
 
 
 # TODO: PUT /{asset_id} - czeka na PPKAccountUpdate w schemas/asset.py

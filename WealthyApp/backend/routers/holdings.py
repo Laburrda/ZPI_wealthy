@@ -7,14 +7,11 @@ from schemas.holding import HoldingCreate, HoldingResponse
 from services import holding_service
 from enums import AssetClass
 
+from models.user import User
+from services.auth_service import get_current_user
+
 
 router = APIRouter(prefix="/holdings", tags=["Holdings"])
-
-
-# === ZAŚLEPKA AUTORYZACJI ===
-# TODO: Zastąpić importem z auth/, kiedy DEV A skończy JWT.
-def get_current_user_id() -> int:
-    return 1
 
 # === HELPER ===
 def _to_response(holding: Holding) -> dict:
@@ -63,9 +60,9 @@ def _to_response(holding: Holding) -> dict:
 def create_holding_endpoint(
     data: HoldingCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    holding = holding_service.create_holding(db, user_id=user_id, data=data)
+    holding = holding_service.create_holding(db, user_id=current_user.id, data=data)
     return _to_response(holding)
 
 
@@ -80,10 +77,10 @@ def list_holdings_endpoint(
         description="Jeśli podane - pokaże tylko holdings w tym konkretnym IKE/IKZE",
     ),
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
     holdings = holding_service.list_holdings(
-        db, user_id=user_id, ike_account_id=ike_account_id
+        db, user_id=current_user.id, ike_account_id=ike_account_id
     )
     return [_to_response(h) for h in holdings]
 
@@ -96,9 +93,9 @@ def list_holdings_endpoint(
 def get_holding_endpoint(
     holding_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    holding = holding_service.get_holding(db, user_id=user_id, holding_id=holding_id)
+    holding = holding_service.get_holding(db, user_id=current_user.id, holding_id=holding_id)
     return _to_response(holding)
 
 
@@ -110,9 +107,9 @@ def get_holding_endpoint(
 def delete_holding_endpoint(
     holding_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id),
+    current_user: User = Depends(get_current_user),
 ):
-    holding_service.delete_holding(db, user_id=user_id, holding_id=holding_id)
+    holding_service.delete_holding(db, user_id=current_user.id, holding_id=holding_id)
 
 
 # TODO: PUT - czeka na HoldingUpdate w schemas/holding.py
