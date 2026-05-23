@@ -18,3 +18,5 @@ class User(Base):
     # Relations
     assets: Mapped[list["Asset"]] = relationship(back_populates="user")
     holdings: Mapped[list["Holding"]] = relationship(back_populates="user")
+    transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
+    categories   = relationship("Category",    back_populates="user", cascade="all, delete-orphan")

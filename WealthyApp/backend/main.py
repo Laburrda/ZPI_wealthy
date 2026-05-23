@@ -5,6 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, savings, ppk, ike_ikze, crypto, holdings, retirement
 
+from routers.transactions import router as transactions_router
+from routers.transactions import categories_router
+
 # Automatyczne ładowanie wszystkich modeli bazy danych na starcie aplikacji,
 # aby zapobiec błędom relacji w SQLAlchemy (np. z brakiem klas User, PPKAccount itp.)
 import models
@@ -50,3 +53,5 @@ app.include_router(ike_ikze.ikze_router)
 app.include_router(crypto.router)
 app.include_router(holdings.router)
 app.include_router(retirement.router)
+app.include_router(transactions_router)
+app.include_router(categories_router)

@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from models.asset import Asset
 from models.holding import Holding
 from models.bond_details import BondDetails
-from models.cdf_details import CFDDetails  # UWAGA: typo w nazwie pliku DEV A (cdf zamiast cfd)
+from models.cfd_details import CFDDetails
 from models.ike_ikze_account import IKEAccount
 from schemas.holding import (
     StockCreate, ETFCreate, BondCreate, CFDCreate, CryptoCreate,

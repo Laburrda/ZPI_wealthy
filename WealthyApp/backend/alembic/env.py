@@ -15,7 +15,9 @@ from models.ike_ikze_account import IKEAccount
 from models.crypto_wallet import CryptoWallet
 from models.holding import Holding
 from models.bond_details import BondDetails
-from models.cdf_details import CFDDetails
+from models.cfd_details import CFDDetails
+from models.category import Category # noqa: F401
+from models.transaction import Transaction # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

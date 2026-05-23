@@ -1,8 +1,8 @@
-"""Initial schema
+"""initial_schema
 
-Revision ID: 6557f14bb97f
+Revision ID: a5f0d9951819
 Revises: 
-Create Date: 2026-05-20 21:34:07.937084
+Create Date: 2026-05-23 18:05:36.319458
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6557f14bb97f'
+revision: str = 'a5f0d9951819'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -38,6 +38,18 @@ def upgrade() -> None:
     sa.Column('currency', sa.String(length=3), server_default='PLN', nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('categories',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('name', sa.String(length=80), nullable=False),
+    sa.Column('transaction_type', sa.Enum('EXPENSE', 'INCOME', name='expenseincome'), nullable=False),
+    sa.Column('icon', sa.String(length=50), nullable=True),
+    sa.Column('color', sa.String(length=7), nullable=True),
+    sa.Column('is_default', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -81,6 +93,22 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['asset_id'], ['assets.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('asset_id')
     )
+    op.create_table('transactions',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('transaction_type', sa.Enum('EXPENSE', 'INCOME', name='expenseincome'), nullable=False),
+    sa.Column('amount', sa.Float(), nullable=False),
+    sa.Column('currency', sa.String(length=3), nullable=False),
+    sa.Column('category_id', sa.Integer(), nullable=True),
+    sa.Column('transaction_date', sa.Date(), nullable=False),
+    sa.Column('description', sa.String(length=255), nullable=True),
+    sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('holdings',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -122,10 +150,12 @@ def downgrade() -> None:
     op.drop_table('cfd_details')
     op.drop_table('bond_details')
     op.drop_table('holdings')
+    op.drop_table('transactions')
     op.drop_table('savings_accounts')
     op.drop_table('ppk_accounts')
     op.drop_table('ike_accounts')
     op.drop_table('crypto_wallets')
+    op.drop_table('categories')
     op.drop_table('assets')
     op.drop_table('users')
     # ### end Alembic commands ###
