@@ -1,5 +1,6 @@
 # python==3.12.10
 
+yfinance
 bcrypt==4.0.1
 fastapi==0.110.0
 uvicorn[standard]==0.29.0

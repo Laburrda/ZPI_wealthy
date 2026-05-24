@@ -4,6 +4,7 @@ import pkgutil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, savings, ppk, ike_ikze, crypto, holdings, retirement
+from routers import dashboard
 
 from routers.transactions import router as transactions_router
 from routers.transactions import categories_router
@@ -14,11 +15,47 @@ import models
 for _, module_name, _ in pkgutil.iter_modules(models.__path__):
     importlib.import_module(f"models.{module_name}")
 
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+
+from services.price_updater import price_update_loop, fx_update_loop
+
+import yfinance as yf
+yf.set_tz_cache_location("C:/temp/yfinance-cache")
+
+# Konfiguracja loggera — zobaczysz logi price_updatera w konsoli
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- STARTUP ---
+    price_task = asyncio.create_task(
+        price_update_loop(interval_seconds=900)   # 15 minut
+    )
+    fx_task = asyncio.create_task(
+        fx_update_loop(interval_seconds=86400)    # 24 godziny
+    )
+
+    yield  # aplikacja żyje tutaj
+
+    # --- SHUTDOWN ---
+    price_task.cancel()
+    fx_task.cancel()
+    try:
+        await asyncio.gather(price_task, fx_task)
+    except asyncio.CancelledError:
+        pass
 
 app = FastAPI(
     title="FinApp Backend",
     description="Backend dla aplikacji do zarządzania finansami osobistymi.",
     version="0.1.0",
+    lifespan=lifespan
 )
 
 # === CORS ===
@@ -43,8 +80,6 @@ def root():
 
 
 # === ROUTERY ===
-# TODO: w miarę dodawania kolejnych typów aktywów (ppk, ike, ikze, crypto, holdings)
-# i kalkulatora emerytalnego — dopisujemy kolejne include_router tutaj.
 app.include_router(auth.router)
 app.include_router(savings.router)
 app.include_router(ppk.router)
@@ -55,3 +90,4 @@ app.include_router(holdings.router)
 app.include_router(retirement.router)
 app.include_router(transactions_router)
 app.include_router(categories_router)
+app.include_router(dashboard.router)

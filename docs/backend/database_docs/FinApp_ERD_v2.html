@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinApp ERD v2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg2: #0f1525;
+  --bg3: #151c30;
+  --panel: #1a2238;
+  --panel2: #1f2940;
+  --border: #2a3a5c;
+  --border2: #354870;
+  --accent: #4f8ef7;
+  --accent2: #7eb8ff;
+  --accent3: #b8d4ff;
+  --green: #3dd68c;
+  --green2: #5eeaaa;
+  --yellow: #f5c842;
+  --red: #f07070;
+  --orange: #f0a050;
+  --purple: #a78bfa;
+  --text: #e8eef8;
+  --text2: #a0b0cc;
+  --text3: #6a7a99;
+  --pk: #f5c842;
+  --fk: #4f8ef7;
+  --new: #3dd68c;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  overflow-x: auto;
+}
+
+/* ── CANVAS ── */
+#canvas {
+  position: relative;
+  width: 2600px;
+  min-height: 1800px;
+  padding: 60px;
+}
+
+svg#lines {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ── HEADER ── */
+.page-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(10,14,26,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.page-header h1 {
+  font-family: var(--sans);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--accent2);
+}
+.page-header span {
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+}
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+  align-items: center;
+}
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text2);
+  letter-spacing: 0.06em;
+}
+.leg-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+}
+
+/* ── TABLE CARD ── */
+.tbl {
+  position: absolute;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 280px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(79,142,247,0.05);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.tbl:hover {
+  border-color: var(--border2);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(79,142,247,0.15);
+}
+.tbl.new-table {
+  border-color: rgba(61,214,140,0.35);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(61,214,140,0.1), 0 0 24px rgba(61,214,140,0.04);
+}
+.tbl.new-table:hover {
+  border-color: rgba(61,214,140,0.55);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(61,214,140,0.25);
+}
+
+.tbl-head {
+  padding: 10px 14px 8px;
+  background: var(--panel2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.new-table .tbl-head {
+  background: rgba(61,214,140,0.07);
+  border-bottom-color: rgba(61,214,140,0.2);
+}
+.tbl-name {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent2);
+  letter-spacing: 0.02em;
+  flex: 1;
+}
+.new-table .tbl-name { color: var(--green2); }
+.tbl-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.badge-jti { background: rgba(167,139,250,0.15); color: var(--purple); }
+.badge-new { background: rgba(61,214,140,0.15); color: var(--green); }
+.badge-base { background: rgba(79,142,247,0.15); color: var(--accent); }
+
+.tbl-fields { padding: 6px 0; }
+
+.field {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  transition: background 0.15s;
+}
+.field:hover { background: rgba(255,255,255,0.03); }
+
+.field-icon { width: 14px; text-align: center; }
+.pk-icon  { color: var(--pk); font-size: 9px; font-weight: 700; }
+.fk-icon  { color: var(--fk); font-size: 9px; font-weight: 700; }
+.pkfk-icon{ color: var(--orange); font-size: 9px; font-weight: 700; }
+
+.field-name {
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.field-name.is-pk { color: var(--pk); font-weight: 600; }
+.field-name.is-fk { color: var(--accent3); }
+.field-name.is-pkfk { color: var(--orange); font-weight: 600; }
+
+.field-type {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  text-align: right;
+  white-space: nowrap;
+}
+.type-enum { color: var(--purple); }
+.type-bool { color: var(--green); }
+.nullable-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text3);
+  opacity: 0.4;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.field-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 14px;
+  opacity: 0.5;
+}
+
+/* ── RELATION LINES ── */
+.rel-line {
+  stroke-width: 1.5;
+  fill: none;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.rel-line:hover { opacity: 1; }
+.rel-cascade { stroke: var(--fk); stroke-dasharray: none; }
+.rel-jti { stroke: var(--purple); stroke-dasharray: 5 3; }
+.rel-opt { stroke: var(--text3); stroke-dasharray: 4 4; }
+.rel-new { stroke: var(--green); stroke-dasharray: none; }
+.rel-setnull { stroke: var(--orange); stroke-dasharray: 3 3; }
+
+.arrow-head { fill: var(--fk); }
+.arrow-head-purple { fill: var(--purple); }
+.arrow-head-grey { fill: var(--text3); }
+.arrow-head-green { fill: var(--green); }
+.arrow-head-orange { fill: var(--orange); }
+
+/* ── SECTION LABELS ── */
+.section-label {
+  position: absolute;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-left: 2px solid;
+  padding-left: 8px;
+}
+
+/* ── TOOLTIP ── */
+.tooltip {
+  position: fixed;
+  background: var(--panel2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: var(--text2);
+  pointer-events: none;
+  z-index: 200;
+  max-width: 260px;
+  line-height: 1.6;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+
+body { padding-top: 52px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>FinApp ERD</h1>
+  <span>v2.0 · Sesje 1 + 4 · FastAPI + SQLAlchemy 2.x + SQLite</span>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--pk)"></div> PK</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--fk)"></div> FK (CASCADE)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div> PK+FK (JTI)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div> JTI 1:1</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--text3)"></div> FK opt.</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div> ★ Nowe (Sesja 4)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--orange); opacity:.7"></div> SET NULL</div>
+    <span style="color:var(--text3);font-size:10px">· = nullable</span>
+  </div>
+</div>
+
+<div id="canvas">
+  <svg id="lines"></svg>
+
+  <!-- ── SECTION LABELS ── -->
+  <div class="section-label" style="top:48px;left:60px;border-color:var(--accent)">Użytkownicy</div>
+  <div class="section-label" style="top:48px;left:420px;border-color:var(--purple)">Aktywa (JTI)</div>
+  <div class="section-label" style="top:48px;left:1220px;border-color:var(--purple)">Holdings (JTI)</div>
+  <div class="section-label" style="top:48px;left:1900px;border-color:var(--green)">Sesja 4 — Transakcje</div>
+
+  <!-- ════════════════════════════════════════════
+       USERS
+  ════════════════════════════════════════════ -->
+  <div class="tbl" id="t_users" style="top:80px;left:60px">
+    <div class="tbl-head">
+      <span class="tbl-name">users</span>
+      <span class="tbl-badge badge-base">CORE</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pk-icon">PK</span><span class="field-name is-pk">id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">email</span><span class="field-type">VARCHAR(255)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">hashed_password</span><span class="field-type">VARCHAR(255)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">full_name</span><span class="field-type">VARCHAR(100)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">updated_at</span><span class="field-type">DATETIME</span></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       ASSETS
+  ════════════════════════════════════════════ -->
+  <div class="tbl" id="t_assets" style="top:80px;left:420px">
+    <div class="tbl-head">
+      <span class="tbl-name">assets</span>
+      <span class="tbl-badge badge-base">JTI base</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pk-icon">PK</span><span class="field-name is-pk">id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon fk-icon">FK</span><span class="field-name is-fk">user_id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">asset_type</span><span class="field-type type-enum">ENUM</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">name</span><span class="field-type">VARCHAR(100)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">currency</span><span class="field-type">VARCHAR(3)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">updated_at</span><span class="field-type">DATETIME</span></div>
+    </div>
+  </div>
+
+  <!-- savings_accounts -->
+  <div class="tbl" id="t_savings" style="top:80px;left:760px">
+    <div class="tbl-head">
+      <span class="tbl-name">savings_accounts</span>
+      <span class="tbl-badge badge-jti">JTI</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pkfk-icon">⬡</span><span class="field-name is-pkfk">asset_id</span><span class="field-type">PK · FK</span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">institution_name</span><span class="field-type">VARCHAR(100)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">interest_rate</span><span class="field-type">FLOAT<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">current_balance</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">balance_synced_at</span><span class="field-type">DATETIME<span class="nullable-dot"></span></span></div>
+    </div>
+  </div>
+
+  <!-- ppk_accounts -->
+  <div class="tbl" id="t_ppk" style="top:320px;left:760px">
+    <div class="tbl-head">
+      <span class="tbl-name">ppk_accounts</span>
+      <span class="tbl-badge badge-jti">JTI</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pkfk-icon">⬡</span><span class="field-name is-pkfk">asset_id</span><span class="field-type">PK · FK</span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">institution_name</span><span class="field-type">VARCHAR(100)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">fund_name</span><span class="field-type">VARCHAR(150)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">employee_rate</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">employer_rate</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">current_value</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">value_updated_at</span><span class="field-type">DATETIME<span class="nullable-dot"></span></span></div>
+    </div>
+  </div>
+
+  <!-- ike_accounts -->
+  <div class="tbl" id="t_ike" style="top:600px;left:760px">
+    <div class="tbl-head">
+      <span class="tbl-name">ike_accounts</span>
+      <span class="tbl-badge badge-jti">JTI</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pkfk-icon">⬡</span><span class="field-name is-pkfk">asset_id</span><span class="field-type">PK · FK</span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">institution_name</span><span class="field-type">VARCHAR(100)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">account_subtype</span><span class="field-type type-enum">ENUM</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">annual_limit</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">annual_contributed</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">cash_balance</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">balance_synced_at</span><span class="field-type">DATETIME<span class="nullable-dot"></span></span></div>
+    </div>
+  </div>
+
+  <!-- crypto_wallets -->
+  <div class="tbl" id="t_crypto" style="top:900px;left:760px">
+    <div class="tbl-head">
+      <span class="tbl-name">crypto_wallets</span>
+      <span class="tbl-badge badge-jti">JTI</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pkfk-icon">⬡</span><span class="field-name is-pkfk">asset_id</span><span class="field-type">PK · FK</span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">institution_name</span><span class="field-type">VARCHAR(100)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">wallet_address</span><span class="field-type">VARCHAR(255)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">current_value</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">value_updated_at</span><span class="field-type">DATETIME<span class="nullable-dot"></span></span></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       HOLDINGS
+  ════════════════════════════════════════════ -->
+  <div class="tbl" id="t_holdings" style="top:80px;left:1220px">
+    <div class="tbl-head">
+      <span class="tbl-name">holdings</span>
+      <span class="tbl-badge badge-base">JTI base</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pk-icon">PK</span><span class="field-name is-pk">id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon fk-icon">FK</span><span class="field-name is-fk">user_id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon fk-icon">FK</span><span class="field-name is-fk">ike_account_id</span><span class="field-type">INTEGER<span class="nullable-dot"></span></span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">ticker</span><span class="field-type">VARCHAR(20)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">name</span><span class="field-type">VARCHAR(150)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">asset_class</span><span class="field-type type-enum">ENUM</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">quantity</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">avg_purchase_price</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">current_price</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">entry_date</span><span class="field-type">DATE</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">last_price_update</span><span class="field-type">DATETIME<span class="nullable-dot"></span></span></div>
+    </div>
+  </div>
+
+  <!-- bond_details -->
+  <div class="tbl" id="t_bond" style="top:80px;left:1560px">
+    <div class="tbl-head">
+      <span class="tbl-name">bond_details</span>
+      <span class="tbl-badge badge-jti">JTI</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pkfk-icon">⬡</span><span class="field-name is-pkfk">holding_id</span><span class="field-type">PK · FK</span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">face_value</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">coupon_rate</span><span class="field-type">FLOAT<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">maturity_date</span><span class="field-type">DATE</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">issuer</span><span class="field-type">VARCHAR(150)</span></div>
+    </div>
+  </div>
+
+  <!-- cfd_details -->
+  <div class="tbl" id="t_cfd" style="top:340px;left:1560px">
+    <div class="tbl-head">
+      <span class="tbl-name">cfd_details</span>
+      <span class="tbl-badge badge-jti">JTI</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pkfk-icon">⬡</span><span class="field-name is-pkfk">holding_id</span><span class="field-type">PK · FK</span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">leverage</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">margin_used</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">direction</span><span class="field-type type-enum">ENUM</span></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       SESJA 4 — categories + transactions
+  ════════════════════════════════════════════ -->
+  <div class="tbl new-table" id="t_categories" style="top:80px;left:1900px">
+    <div class="tbl-head">
+      <span class="tbl-name">categories</span>
+      <span class="tbl-badge badge-new">★ Sesja 4</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pk-icon">PK</span><span class="field-name is-pk">id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon fk-icon">FK</span><span class="field-name is-fk">user_id</span><span class="field-type">INTEGER<span class="nullable-dot"></span></span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">name</span><span class="field-type">VARCHAR(80)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">transaction_type</span><span class="field-type type-enum">ENUM<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">icon</span><span class="field-type">VARCHAR(50)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">color</span><span class="field-type">VARCHAR(7)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">is_default</span><span class="field-type type-bool">BOOLEAN</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+    </div>
+  </div>
+
+  <!-- transactions -->
+  <div class="tbl new-table" id="t_transactions" style="top:440px;left:1900px">
+    <div class="tbl-head">
+      <span class="tbl-name">transactions</span>
+      <span class="tbl-badge badge-new">★ Sesja 4</span>
+    </div>
+    <div class="tbl-fields">
+      <div class="field"><span class="field-icon pk-icon">PK</span><span class="field-name is-pk">id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon fk-icon">FK</span><span class="field-name is-fk">user_id</span><span class="field-type">INTEGER</span></div>
+      <div class="field"><span class="field-icon fk-icon">FK</span><span class="field-name is-fk">category_id</span><span class="field-type">INTEGER<span class="nullable-dot"></span></span></div>
+      <div class="field-divider"></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">transaction_type</span><span class="field-type type-enum">ENUM</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">amount</span><span class="field-type">FLOAT</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">currency</span><span class="field-type">VARCHAR(3)</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">transaction_date</span><span class="field-type">DATE</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">description</span><span class="field-type">VARCHAR(255)<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">notes</span><span class="field-type">TEXT<span class="nullable-dot"></span></span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">created_at</span><span class="field-type">DATETIME</span></div>
+      <div class="field"><span class="field-icon"></span><span class="field-name">updated_at</span><span class="field-type">DATETIME</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ── draw SVG lines between tables ────────────────────────────────────────────
+function mid(el) {
+  const r = el.getBoundingClientRect();
+  const canvas = document.getElementById('canvas').getBoundingClientRect();
+  return {
+    x: r.left - canvas.left + window.scrollX,
+    y: r.top  - canvas.top  + window.scrollY,
+    w: r.width,
+    h: r.height,
+    cx: r.left - canvas.left + window.scrollX + r.width/2,
+    cy: r.top  - canvas.top  + window.scrollY + r.height/2,
+    right:  r.left - canvas.left + window.scrollX + r.width,
+    bottom: r.top  - canvas.top  + window.scrollY + r.height,
+  };
+}
+
+function fieldY(tableId, nth) {
+  const tbl = document.getElementById(tableId);
+  const fields = tbl.querySelectorAll('.field');
+  const tblR = tbl.getBoundingClientRect();
+  const canvas = document.getElementById('canvas').getBoundingClientRect();
+  if(fields[nth]) {
+    const fR = fields[nth].getBoundingClientRect();
+    return fR.top - canvas.top + window.scrollY + fR.height/2;
+  }
+  return tblR.top - canvas.top + window.scrollY + tblR.height/2;
+}
+
+function headY(tableId) {
+  const tbl = document.getElementById(tableId);
+  const head = tbl.querySelector('.tbl-head');
+  const headR = head.getBoundingClientRect();
+  const canvas = document.getElementById('canvas').getBoundingClientRect();
+  return headR.top - canvas.top + window.scrollY + headR.height/2;
+}
+
+function drawPath(svg, x1,y1,x2,y2,cls,arrowCls) {
+  const dx = Math.abs(x2-x1);
+  const cx1 = x1 + dx*0.5;
+  const cx2 = x2 - dx*0.5;
+  const d = `M${x1},${y1} C${cx1},${y1} ${cx2},${y2} ${x2},${y2}`;
+  const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d", d);
+  path.setAttribute("class", `rel-line ${cls}`);
+  svg.appendChild(path);
+
+  // arrowhead at end
+  const arr = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+  const dir = x2 > x1 ? 1 : -1;
+  arr.setAttribute("points", `${x2},${y2} ${x2-dir*10},${y2-5} ${x2-dir*10},${y2+5}`);
+  arr.setAttribute("class", arrowCls);
+  arr.setAttribute("opacity","0.7");
+  svg.appendChild(arr);
+}
+
+function drawLines() {
+  const svg = document.getElementById('lines');
+  svg.innerHTML = "";
+
+  const t = {};
+  ['users','assets','savings','ppk','ike','crypto','holdings','bond','cfd','categories','transactions'].forEach(id => {
+    t[id] = mid(document.getElementById('t_'+id));
+  });
+
+  // users → assets (CASCADE, right edge of users → left edge of assets)
+  drawPath(svg, t.users.right, headY('t_users'), t.assets.x, headY('t_assets'), 'rel-cascade', 'arrow-head');
+
+  // users → holdings
+  drawPath(svg, t.users.right, headY('t_users')+16,
+    t.holdings.x, headY('t_holdings')+16, 'rel-cascade', 'arrow-head');
+
+  // users → categories (Sesja 4)
+  drawPath(svg, t.users.right, headY('t_users')+32,
+    t.categories.x, headY('t_categories')+16, 'rel-new', 'arrow-head-green');
+
+  // users → transactions
+  drawPath(svg, t.users.right, headY('t_users')+48,
+    t.transactions.x, headY('t_transactions')+16, 'rel-new', 'arrow-head-green');
+
+  // assets → savings (JTI 1:1)
+  drawPath(svg, t.assets.right, headY('t_assets'),
+    t.savings.x, headY('t_savings'), 'rel-jti', 'arrow-head-purple');
+
+  // assets → ppk
+  drawPath(svg, t.assets.right, headY('t_assets')+6,
+    t.ppk.x, headY('t_ppk'), 'rel-jti', 'arrow-head-purple');
+
+  // assets → ike
+  drawPath(svg, t.assets.right, headY('t_assets')+12,
+    t.ike.x, headY('t_ike'), 'rel-jti', 'arrow-head-purple');
+
+  // assets → crypto
+  drawPath(svg, t.assets.right, headY('t_assets')+18,
+    t.crypto.x, headY('t_crypto'), 'rel-jti', 'arrow-head-purple');
+
+  // ike → holdings (opt FK)
+  drawPath(svg, t.ike.right, headY('t_ike'),
+    t.holdings.x, fieldY('t_holdings', 2), 'rel-opt', 'arrow-head-grey');
+
+  // holdings → bond (JTI)
+  drawPath(svg, t.holdings.right, headY('t_holdings'),
+    t.bond.x, headY('t_bond'), 'rel-jti', 'arrow-head-purple');
+
+  // holdings → cfd (JTI)
+  drawPath(svg, t.holdings.right, headY('t_holdings')+8,
+    t.cfd.x, headY('t_cfd'), 'rel-jti', 'arrow-head-purple');
+
+  // categories → transactions (SET NULL)
+  drawPath(svg, t.categories.cx, t.categories.bottom,
+    t.transactions.cx, t.transactions.y, 'rel-setnull', 'arrow-head-orange');
+}
+
+// Wait for fonts + layout
+window.addEventListener('load', () => {
+  setTimeout(drawLines, 200);
+  window.addEventListener('resize', drawLines);
+});
+
+// ── tooltips ────────────────────────────────────────────────────────────────
+const tooltips = {
+  't_users': 'Tabela użytkowników. Każdy user ma unikalne email. Hasło przechowywane jako hash bcrypt.',
+  't_assets': 'Tabela bazowa JTI dla kont finansowych. asset_type determinuje tabelę podtypu.',
+  't_savings': 'Konta oszczędnościowe. Relacja 1:1 z assets przez asset_id (PK=FK).',
+  't_ppk': 'Pracownicze Plany Kapitałowe. annual_contributed resetuje się co 1 stycznia.',
+  't_ike': 'Konta IKE/IKZE. cash_balance + SUM(holdings) = łączna wartość konta. annual_limit walidowany przy wpłacie.',
+  't_crypto': 'Portfele kryptowalut. current_value aktualizowany zewnętrznie (docelowo CoinGecko API).',
+  't_holdings': 'Instrumenty finansowe (akcje, ETF, obligacje, CFD, krypto). current_price aktualizowany przez background task (yfinance).',
+  't_bond': 'Rozszerzenie holdings dla asset_class="bond". Relacja 1:1 przez holding_id (PK=FK).',
+  't_cfd': 'Rozszerzenie holdings dla asset_class="cfd". Leverage > 1.0, direction: long|short.',
+  't_categories': '★ NOWE (Sesja 4). is_default=True → kategoria systemowa globalna. is_default=False → własna kategorii usera.',
+  't_transactions': '★ NOWE (Sesja 4). amount zawsze > 0. Kierunek określa transaction_type. category_id SET NULL przy usunięciu kategorii.',
+};
+
+document.querySelectorAll('.tbl').forEach(tbl => {
+  const tip = document.getElementById('tooltip');
+  tbl.addEventListener('mouseenter', e => {
+    const txt = tooltips[tbl.id];
+    if(!txt) return;
+    tip.textContent = txt;
+    tip.style.display = 'block';
+  });
+  tbl.addEventListener('mousemove', e => {
+    tip.style.left = (e.clientX + 16) + 'px';
+    tip.style.top  = (e.clientY + 16) + 'px';
+  });
+  tbl.addEventListener('mouseleave', () => {
+    tip.style.display = 'none';
+  });
+});
+</script>
+</body>
+</html>

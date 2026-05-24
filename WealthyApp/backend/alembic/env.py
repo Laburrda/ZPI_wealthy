@@ -18,6 +18,7 @@ from models.bond_details import BondDetails
 from models.cfd_details import CFDDetails
 from models.category import Category # noqa: F401
 from models.transaction import Transaction # noqa: F401
+from models.exchange_rate import ExchangeRate
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

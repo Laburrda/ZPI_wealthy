@@ -18,6 +18,7 @@ class HoldingBase(BaseModel):
     name: str
     quantity: float
     avg_purchase_price: float
+    currency: str = "PLN" 
     current_price: float = 0
 
 
