@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
-import '../models/asset_model.dart'; // Importujemy nasz model z Kroku 1
+import '../models/asset_model.dart';
 
 class AssetCard extends StatelessWidget {
-  final AssetModel asset; // Każdy kafelek musi otrzymać dane o jednym aktywie
+  final AssetModel asset;
+  final VoidCallback? onDelete;
+  final VoidCallback? onEdit; // Nowa akcja edycji
 
-  const AssetCard({super.key, required this.asset});
+  const AssetCard({super.key, required this.asset, this.onDelete, this.onEdit});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(
-        0xFF1E1E1E,
-      ), // Ciemne tło karty (lekko jaśniejsze od czarnego ekranu)
+      color: const Color(0xFF1E1E1E),
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        // Neonowa ramka wokół kafelka
         side: const BorderSide(color: Colors.tealAccent, width: 0.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            // Ikona po lewej stronie
             CircleAvatar(
               backgroundColor: Colors.tealAccent.withOpacity(0.1),
               radius: 24,
@@ -32,7 +30,6 @@ class AssetCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            // Środkowa sekcja (Nazwa i Instytucja)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +53,6 @@ class AssetCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Prawa sekcja (Wartość i Waluta)
             Text(
               '${asset.value.toStringAsFixed(2)} ${asset.currency}',
               style: const TextStyle(
@@ -65,6 +61,21 @@ class AssetCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            // Przyciski akcji
+            if (onEdit != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, color: Colors.white70),
+                onPressed: onEdit,
+                tooltip: 'Edytuj aktywo',
+              ),
+            ],
+            if (onDelete != null)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                onPressed: onDelete,
+                tooltip: 'Usuń aktywo',
+              ),
           ],
         ),
       ),

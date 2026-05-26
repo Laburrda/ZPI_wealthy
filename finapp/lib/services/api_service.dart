@@ -26,4 +26,26 @@ class ApiService {
       ),
     ];
   }
+
+  Future<List<AssetModel>> fetchInvestments() async {
+    await Future.delayed(const Duration(seconds: 2));
+    return [
+      AssetModel(
+        id: '3',
+        name: 'IKE (Obligacje Skarbowe)',
+        type: 'investment',
+        institution: 'PKO BP',
+        currency: 'PLN',
+        value: 34000.00,
+      ),
+      AssetModel(
+        id: '4',
+        name: 'Konto Maklerskie (ETFy)',
+        type: 'investment',
+        institution: 'XTB',
+        currency: 'USD',
+        value: 8500.00,
+      ),
+    ];
+  }
 }
