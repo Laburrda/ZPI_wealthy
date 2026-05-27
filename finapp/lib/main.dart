@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Importujemy wszystkie utworzone ekrany
+import 'screens/login_screen.dart'; // POPRAWKA: Dodany import ekranu logowania
 import 'screens/dashboard_screen.dart';
 import 'screens/savings_screen.dart';
 import 'screens/investments_screen.dart';
@@ -37,7 +38,8 @@ class FinApp extends StatelessWidget {
           type: BottomNavigationBarType.fixed, // Wymagane przy 5 zakładkach
         ),
       ),
-      home: const MainNavigationShell(),
+      // POPRAWKA: Ustawiamy LoginScreen jako punkt startowy zamiast MainNavigationShell
+      home: const LoginScreen(),
     );
   }
 }
@@ -56,7 +58,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   // Lista 5 ekranów w kolejności zgodnej z planem projektu
   final List<Widget> _screens = [
     const DashboardScreen(),
-    const SavingsScreen(), // Twoja działka (tutaj kręci się loading)
+    const SavingsScreen(), // Twoja działka
     const InvestmentsScreen(), // Twoja działka
     const RetirementScreen(), // Twoja działka
     const ExpensesScreen(),

@@ -48,4 +48,19 @@ class ApiService {
       ),
     ];
   }
+
+  // 3. NOWE: Autentykacja na podstawie wytycznych backendu
+  Future<String?> login(String email, String password) async {
+    // Symulujemy czas odpowiedzi serwera
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Weryfikacja: sprawdzamy czy mail nie jest pusty i hasło ma min. 6 znaków
+    if (email.isNotEmpty && password.length >= 6) {
+      // Jeśli wszystko ok, zwracamy udawany Token JWT
+      // W prawdziwej aplikacji ten token wyśle nam backend w odpowiedzi
+      return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mocked_token_from_dev_b";
+    } else {
+      throw Exception("Nieprawidłowy adres e-mail lub hasło.");
+    }
+  }
 }
