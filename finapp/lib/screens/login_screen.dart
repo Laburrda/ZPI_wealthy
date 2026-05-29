@@ -168,7 +168,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   SizedBox(
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submitLogin,
+                      //walidacja loginu na razie wylaczona bo mnie pojebe zeby sie logowac za kazdym razem 
+                      onPressed: (){
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const MainNavigationShell()),
+                        );
+                      },//_isLoading ? null : _submitLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.tealAccent,
                         foregroundColor: Colors.black,

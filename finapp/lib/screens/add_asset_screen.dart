@@ -2,12 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/asset_model.dart';
 import '../providers/savings_provider.dart';
-import '../providers/investments_provider.dart'; // Dodajemy import dla inwestycji
+import '../providers/investments_provider.dart';
+
+// Typy oszczędności
+const _savingsTypes = ['savings', 'ppk', 'ike', 'ikze'];
+const _savingsTypeLabels = {
+  'savings': 'Konto oszczędnościowe',
+  'ppk': 'PPK',
+  'ike': 'IKE',
+  'ikze': 'IKZE',
+};
+
+const _investmentTypes = [
+  'investment',
+  'stock',
+  'etf',
+  'bond',
+  'cfd',
+  'crypto',
+];
+const _investmentTypeLabels = {
+  'investment': 'Inne',
+  'stock': 'Akcje',
+  'etf': 'ETF',
+  'bond': 'Obligacje',
+  'cfd': 'CFD',
+  'crypto': 'Kryptowaluty',
+};
 
 class AddAssetScreen extends ConsumerStatefulWidget {
   final AssetModel? assetToEdit;
-  final bool
-  isInvestment; // NOWOŚĆ: flaga informująca, do której szuflady trafiają dane
+  final bool isInvestment;
 
   const AddAssetScreen({
     super.key,
@@ -24,16 +49,25 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
   final _institutionController = TextEditingController();
+
   String _selectedCurrency = 'PLN';
+  String _selectedSavingsType = 'savings';
+  String _selectedInvestmentType = 'investment';
 
   @override
   void initState() {
     super.initState();
     if (widget.assetToEdit != null) {
-      _nameController.text = widget.assetToEdit!.name;
-      _amountController.text = widget.assetToEdit!.value.toString();
-      _institutionController.text = widget.assetToEdit!.institution;
-      _selectedCurrency = widget.assetToEdit!.currency;
+      final a = widget.assetToEdit!;
+      _nameController.text = a.name;
+      _amountController.text = a.value.toString();
+      _institutionController.text = a.institution;
+      _selectedCurrency = a.currency;
+      if (!widget.isInvestment && _savingsTypes.contains(a.type)) {
+        _selectedSavingsType = a.type;
+      } else if (widget.isInvestment && _investmentTypes.contains(a.type)) {
+        _selectedInvestmentType = a.type;
+      }
     }
   }
 
@@ -46,31 +80,34 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
   }
 
   void _submitData() {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    final enteredName = _nameController.text.trim();
-    final enteredAmount = double.parse(_amountController.text.trim());
-    final enteredInstitution = _institutionController.text.trim();
-
-    final newOrUpdatedAsset = AssetModel(
+    final asset = AssetModel(
       id:
           widget.assetToEdit?.id ??
           DateTime.now().millisecondsSinceEpoch.toString(),
-      name: enteredName,
-      // Dynamicznie przypisujemy typ zasobu na podstawie flagi z konstruktora
-      type: widget.isInvestment ? 'investment' : 'savings',
-      institution: enteredInstitution,
+      name: _nameController.text.trim(),
+      type: widget.isInvestment
+          ? _selectedInvestmentType
+          : _selectedSavingsType,
+      institution: _institutionController.text.trim(),
       currency: _selectedCurrency,
-      value: enteredAmount,
+      value: double.parse(_amountController.text.trim()),
     );
 
-    // DECYZJA ARCHITEKTONICZNA: Wysyłamy dane do odpowiedniego providera
     if (widget.isInvestment) {
-      ref.read(investmentsProvider.notifier).addInvestment(newOrUpdatedAsset);
+      if (widget.assetToEdit != null) {
+        // edycja inwestycji — można rozszerzyć gdy investments_provider będzie miał updateInvestment
+        ref.read(investmentsProvider.notifier).addInvestment(asset);
+      } else {
+        ref.read(investmentsProvider.notifier).addInvestment(asset);
+      }
     } else {
-      ref.read(savingsProvider.notifier).addAsset(newOrUpdatedAsset);
+      if (widget.assetToEdit != null) {
+        ref.read(savingsProvider.notifier).updateAsset(asset);
+      } else {
+        ref.read(savingsProvider.notifier).addAsset(asset);
+      }
     }
 
     Navigator.pop(context);
@@ -78,10 +115,18 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.assetToEdit != null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.isInvestment ? 'Dodaj Inwestycję' : 'Dodaj Oszczędności',
+          isEdit
+              ? (widget.isInvestment
+                    ? 'Edytuj inwestycję'
+                    : 'Edytuj oszczędności')
+              : (widget.isInvestment
+                    ? 'Dodaj inwestycję'
+                    : 'Dodaj oszczędności'),
         ),
         backgroundColor: Colors.transparent,
       ),
@@ -91,28 +136,81 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              // Typ oszczędności — tylko dla savings
+              if (!widget.isInvestment) ...[
+                DropdownButtonFormField<String>(
+                  value: _selectedSavingsType,
+                  dropdownColor: const Color(0xFF1E1E1E),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _buildInputDecoration(
+                    'Typ oszczędności',
+                    Icons.category_outlined,
+                  ),
+                  items: _savingsTypes
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(_savingsTypeLabels[t] ?? t),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) =>
+                      setState(() => _selectedSavingsType = val!),
+                ),
+                const SizedBox(height: 16),
+              ] else ...[
+                DropdownButtonFormField<String>(
+                  value: _selectedInvestmentType,
+                  dropdownColor: const Color(0xFF1E1E1E),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _buildInputDecoration(
+                    'Typ inwestycji',
+                    Icons.trending_up_outlined,
+                  ),
+                  items: _investmentTypes
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(_investmentTypeLabels[t] ?? t),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) =>
+                      setState(() => _selectedInvestmentType = val!),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               TextFormField(
                 controller: _nameController,
                 style: const TextStyle(color: Colors.white),
-                decoration: _buildInputDecoration('Nazwa aktywa'),
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Wymagane' : null,
+                decoration: _buildInputDecoration(
+                  'Nazwa aktywa',
+                  Icons.label_outline,
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Wymagane' : null,
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 style: const TextStyle(color: Colors.white),
-                decoration: _buildInputDecoration('Wartość'),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Wymagane';
-                  if (double.tryParse(value) == null) return 'Podaj liczbę';
+                decoration: _buildInputDecoration(
+                  'Wartość',
+                  Icons.payments_outlined,
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Wymagane';
+                  if (double.tryParse(v) == null) return 'Podaj liczbę';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
+
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -122,7 +220,10 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
                       value: _selectedCurrency,
                       dropdownColor: const Color(0xFF1E1E1E),
                       style: const TextStyle(color: Colors.white),
-                      decoration: _buildInputDecoration('Waluta'),
+                      decoration: _buildInputDecoration(
+                        'Waluta',
+                        Icons.currency_exchange,
+                      ),
                       items: ['PLN', 'USD', 'EUR', 'GBP']
                           .map(
                             (c) => DropdownMenuItem(value: c, child: Text(c)),
@@ -138,16 +239,18 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
                     child: TextFormField(
                       controller: _institutionController,
                       style: const TextStyle(color: Colors.white),
-                      decoration: _buildInputDecoration('Instytucja'),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty
-                          ? 'Wymagane'
-                          : null,
+                      decoration: _buildInputDecoration(
+                        'Instytucja',
+                        Icons.account_balance_outlined,
+                      ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Wymagane' : null,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 32),
+
               ElevatedButton(
                 onPressed: _submitData,
                 style: ElevatedButton.styleFrom(
@@ -158,9 +261,12 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Zapisz Aktywo',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  isEdit ? 'Zapisz zmiany' : 'Zapisz aktywo',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -170,10 +276,11 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String label) {
+  InputDecoration _buildInputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.white60),
+      prefixIcon: Icon(icon, color: Colors.tealAccent),
       filled: true,
       fillColor: const Color(0xFF1E1E1E),
       enabledBorder: OutlineInputBorder(

@@ -6,6 +6,17 @@ final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService();
 });
 
+// Provider aktywnego filtra typu oszczędności
+class SavingsFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setFilter(String? type) => state = type;
+}
+
+final savingsTypeFilterProvider =
+    NotifierProvider<SavingsFilterNotifier, String?>(SavingsFilterNotifier.new);
+
 final savingsProvider =
     AsyncNotifierProvider<SavingsNotifier, List<AssetModel>>(() {
       return SavingsNotifier();
@@ -24,26 +35,32 @@ class SavingsNotifier extends AsyncNotifier<List<AssetModel>> {
     }
   }
 
-  // DELETE - Usuwanie
   Future<void> deleteAsset(String id) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (state.value != null) {
-      final updatedList = state.value!
-          .where((asset) => asset.id != id)
-          .toList();
-      state = AsyncValue.data(updatedList);
+      state = AsyncValue.data(
+        state.value!.where((asset) => asset.id != id).toList(),
+      );
     }
   }
 
-  // UPDATE - Edycja
   Future<void> updateAsset(AssetModel updatedAsset) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (state.value != null) {
-      final updatedList = state.value!.map((asset) {
-        // Zastępujemy stary element nowym, jeśli ID się zgadza
-        return asset.id == updatedAsset.id ? updatedAsset : asset;
-      }).toList();
-      state = AsyncValue.data(updatedList);
+      state = AsyncValue.data(
+        state.value!.map((a) => a.id == updatedAsset.id ? updatedAsset : a).toList(),
+      );
     }
   }
 }
+
+// Przefiltrowana lista — używana przez ekran
+final filteredSavingsProvider = Provider<AsyncValue<List<AssetModel>>>((ref) {
+  final savings = ref.watch(savingsProvider);
+  final filter  = ref.watch(savingsTypeFilterProvider);
+
+  return savings.whenData((assets) {
+    if (filter == null) return assets;
+    return assets.where((a) => a.type == filter).toList();
+  });
+});
