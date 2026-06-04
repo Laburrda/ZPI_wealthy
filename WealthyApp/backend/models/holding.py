@@ -26,5 +26,24 @@ class Holding(Base):
     # Relations
     user: Mapped["User"] = relationship(back_populates="holdings")
     ike_account: Mapped["IKEAccount | None"] = relationship(back_populates="holdings")
-    bond_details: Mapped["BondDetails"] = relationship(back_populates="holding", uselist=False)
-    cfd_details: Mapped["CFDDetails"] = relationship(back_populates="holding", uselist=False)
+    # bond_details: Mapped["BondDetails"] = relationship(back_populates="holding", uselist=False)
+    # cfd_details: Mapped["CFDDetails"] = relationship(back_populates="holding", uselist=False)
+    # Plik: models/holding.py (klasa Holding)
+
+    # ... twoje inne pola w klasie Holding (id, ticker, name itd.) ...
+
+    # MUSISZ DOPISAĆ cascade="all, delete-orphan" W OBU RELACJACH:
+    
+    bond_details: Mapped["BondDetails"] = relationship(
+        "BondDetails", 
+        back_populates="holding", 
+        uselist=False, 
+        cascade="all, delete-orphan"  # <--- To powstrzymuje błąd AssertionError!
+    )
+
+    cfd_details: Mapped["CFDDetails"] = relationship(
+        "CFDDetails", 
+        back_populates="holding", 
+        uselist=False, 
+        cascade="all, delete-orphan"  # <--- To powstrzymuje błąd AssertionError!
+    )

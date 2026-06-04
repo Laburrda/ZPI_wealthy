@@ -1,5 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'expenses_provider.dart';
+import '../services/api_service.dart'; // Dodany import API!
+import 'savings_provider.dart'; // DODANE
+import 'investments_provider.dart';
+
+// Współdzielony provider dla ApiService
+final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
 // ── Modele ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +26,12 @@ class UpcomingPayment {
 
   int get daysLeft => dueDate.difference(DateTime.now()).inDays;
 
-  UpcomingPayment copyWith({String? title, double? amount, DateTime? dueDate, String? icon}) {
+  UpcomingPayment copyWith({
+    String? title,
+    double? amount,
+    DateTime? dueDate,
+    String? icon,
+  }) {
     return UpcomingPayment(
       id: id,
       title: title ?? this.title,
@@ -65,42 +76,76 @@ class FinancialSummary {
   }
 }
 
-// ── Notifier: budżet ──────────────────────────────────────────────────────────
+// ── Notifier: PRAWDZIWY budżet z API ──────────────────────────────────────────
 
-class FinancialSummaryNotifier extends Notifier<FinancialSummary> {
+// ── Notifier: PRAWDZIWY budżet (Nasłuchuje innych providerów!) ────────────────
+
+class FinancialSummaryNotifier extends AsyncNotifier<FinancialSummary> {
   @override
-  FinancialSummary build() {
-    final expenses = ref.watch(expensesProvider);
-    final totalExpenses = expenses.fold(0.0, (s, e) => s + e.amount);
+  Future<FinancialSummary> build() async {
+    // Obserwujemy wydatki
+    final expensesAsync = ref.watch(expensesProvider);
+    final totalExpenses =
+        expensesAsync.value?.fold(0.0, (s, e) => s + e.amount) ?? 0.0;
+
+    // Obserwujemy Oszczędności (IKE, PPK, IKZE, Zwykłe)
+    final savingsAsync = ref.watch(savingsProvider);
+    final totalSavings =
+        savingsAsync.value?.fold(0.0, (s, asset) => s + asset.value) ?? 0.0;
+
+    // Obserwujemy Inwestycje (Giełda, Krypto)
+    final investmentsAsync = ref.watch(investmentsProvider);
+    final totalInvestments =
+        investmentsAsync.value?.fold(0.0, (s, asset) => s + asset.value) ?? 0.0;
+
     return FinancialSummary(
-      savings: 24500.00,
-      investments: 18750.00,
+      savings: totalSavings,
+      investments: totalInvestments,
       expensesThisMonth: totalExpenses,
-      budgetLimit: 3000.00,
+      budgetLimit: 3000.00, // Na razie limit na sztywno
     );
   }
 
   void setBudgetLimit(double newLimit) {
-    state = state.copyWith(budgetLimit: newLimit);
+    if (state.value != null) {
+      state = AsyncValue.data(state.value!.copyWith(budgetLimit: newLimit));
+    }
   }
 }
 
 final financialSummaryProvider =
-    NotifierProvider<FinancialSummaryNotifier, FinancialSummary>(
-        FinancialSummaryNotifier.new);
+    AsyncNotifierProvider<FinancialSummaryNotifier, FinancialSummary>(
+      FinancialSummaryNotifier.new,
+    );
 
-// ── Notifier: płatności ───────────────────────────────────────────────────────
+// ── Notifier: płatności (Zostawiamy mocki póki nie mamy backendu na to) ────────
 
 class UpcomingPaymentsNotifier extends Notifier<List<UpcomingPayment>> {
   @override
   List<UpcomingPayment> build() {
     final now = DateTime.now();
     return [
-      UpcomingPayment(id: '1', title: 'Czynsz',   amount: 1500.00, dueDate: DateTime(now.year, now.month + 1, 1),        icon: 'Mieszkanie'),
-      UpcomingPayment(id: '2', title: 'Netflix',  amount: 43.00,   dueDate: DateTime(now.year, now.month, now.day + 3),  icon: 'Rozrywka'),
-      UpcomingPayment(id: '3', title: 'Siłownia', amount: 99.00,   dueDate: DateTime(now.year, now.month, now.day + 5),  icon: 'Zdrowie'),
-      UpcomingPayment(id: '4', title: 'Spotify',  amount: 23.99,   dueDate: DateTime(now.year, now.month, now.day + 7),  icon: 'Rozrywka'),
-      UpcomingPayment(id: '5', title: 'Prąd',     amount: 180.00,  dueDate: DateTime(now.year, now.month, now.day + 12), icon: 'Mieszkanie'),
+      UpcomingPayment(
+        id: '1',
+        title: 'Czynsz',
+        amount: 1500.00,
+        dueDate: DateTime(now.year, now.month + 1, 1),
+        icon: 'Mieszkanie',
+      ),
+      UpcomingPayment(
+        id: '2',
+        title: 'Netflix',
+        amount: 43.00,
+        dueDate: DateTime(now.year, now.month, now.day + 3),
+        icon: 'Rozrywka',
+      ),
+      UpcomingPayment(
+        id: '3',
+        title: 'Siłownia',
+        amount: 99.00,
+        dueDate: DateTime(now.year, now.month, now.day + 5),
+        icon: 'Zdrowie',
+      ),
     ]..sort((a, b) => a.dueDate.compareTo(b.dueDate));
   }
 
@@ -120,39 +165,58 @@ class UpcomingPaymentsNotifier extends Notifier<List<UpcomingPayment>> {
 
 final upcomingPaymentsProvider =
     NotifierProvider<UpcomingPaymentsNotifier, List<UpcomingPayment>>(
-        UpcomingPaymentsNotifier.new);
+      UpcomingPaymentsNotifier.new,
+    );
 
-// ── Provider: alerty (tylko do odczytu) ──────────────────────────────────────
+// ── Provider: alerty ─────────────────────────────────────────────────────────
 
 final dashboardAlertsProvider = Provider<List<DashboardAlert>>((ref) {
-  final summary = ref.watch(financialSummaryProvider);
+  final summaryAsync = ref.watch(financialSummaryProvider);
   final payments = ref.watch(upcomingPaymentsProvider);
   final byCategory = ref.watch(expensesByCategoryProvider);
 
   final alerts = <DashboardAlert>[];
 
-  if (summary.budgetUsedPercent >= 1.0) {
-    alerts.add(DashboardAlert(message: 'Przekroczono miesięczny limit budżetu!', type: AlertType.danger));
-  } else if (summary.budgetUsedPercent >= 0.8) {
-    alerts.add(DashboardAlert(
-      message: 'Wykorzystano ${(summary.budgetUsedPercent * 100).toStringAsFixed(0)}% miesięcznego budżetu.',
-      type: AlertType.warning,
-    ));
+  // System alertów budżetu działa tylko gdy pobierzemy pomyślnie dane z API
+  if (summaryAsync.value != null) {
+    final summary = summaryAsync.value!;
+    if (summary.budgetUsedPercent >= 1.0) {
+      alerts.add(
+        DashboardAlert(
+          message: 'Przekroczono miesięczny limit budżetu!',
+          type: AlertType.danger,
+        ),
+      );
+    } else if (summary.budgetUsedPercent >= 0.8) {
+      alerts.add(
+        DashboardAlert(
+          message:
+              'Wykorzystano ${(summary.budgetUsedPercent * 100).toStringAsFixed(0)}% miesięcznego budżetu.',
+          type: AlertType.warning,
+        ),
+      );
+    }
   }
 
   for (final p in payments.where((p) => p.daysLeft <= 3)) {
-    alerts.add(DashboardAlert(
-      message: '${p.title} (${p.amount.toStringAsFixed(0)} PLN) płatne ${p.daysLeft == 0 ? 'dziś' : 'za ${p.daysLeft} dni'}!',
-      type: AlertType.danger,
-    ));
+    alerts.add(
+      DashboardAlert(
+        message:
+            '${p.title} (${p.amount.toStringAsFixed(0)} PLN) płatne ${p.daysLeft == 0 ? 'dziś' : 'za ${p.daysLeft} dni'}!',
+        type: AlertType.danger,
+      ),
+    );
   }
 
   byCategory.forEach((cat, amount) {
     if (amount > 500) {
-      alerts.add(DashboardAlert(
-        message: 'Wysokie wydatki na $cat: ${amount.toStringAsFixed(0)} PLN w tym miesiącu.',
-        type: AlertType.info,
-      ));
+      alerts.add(
+        DashboardAlert(
+          message:
+              'Wysokie wydatki na $cat: ${amount.toStringAsFixed(0)} PLN w tym miesiącu.',
+          type: AlertType.info,
+        ),
+      );
     }
   });
 

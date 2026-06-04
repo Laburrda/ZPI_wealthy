@@ -1,33 +1,101 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/expense_model.dart';
+import '../services/api_service.dart'; // Podpinamy nasz serwis!
 
-final expensesProvider = Provider<List<ExpenseModel>>((ref) {
-  final now = DateTime.now();
-  return [
-    ExpenseModel(id: '1', title: 'Biedronka',       amount: 134.50, category: 'Jedzenie',     date: DateTime(now.year, now.month, 2)),
-    ExpenseModel(id: '2', title: 'Żabka',            amount: 23.99,  category: 'Jedzenie',     date: DateTime(now.year, now.month, 5)),
-    ExpenseModel(id: '3', title: 'Orlen',            amount: 210.00, category: 'Transport',    date: DateTime(now.year, now.month, 6)),
-    ExpenseModel(id: '4', title: 'Netflix',          amount: 43.00,  category: 'Rozrywka',     date: DateTime(now.year, now.month, 7)),
-    ExpenseModel(id: '5', title: 'Empik',            amount: 59.90,  category: 'Rozrywka',     date: DateTime(now.year, now.month, 9)),
-    ExpenseModel(id: '6', title: 'Czynsz',           amount: 1500.00,category: 'Mieszkanie',   date: DateTime(now.year, now.month, 10)),
-    ExpenseModel(id: '7', title: 'Prąd',             amount: 180.00, category: 'Mieszkanie',   date: DateTime(now.year, now.month, 11)),
-    ExpenseModel(id: '8', title: 'Bolt',             amount: 34.00,  category: 'Transport',    date: DateTime(now.year, now.month, 14)),
-    ExpenseModel(id: '9', title: 'Apteka',           amount: 67.30,  category: 'Zdrowie',      date: DateTime(now.year, now.month, 15)),
-    ExpenseModel(id: '10', title: 'Siłownia',        amount: 99.00,  category: 'Zdrowie',      date: DateTime(now.year, now.month, 16)),
-    ExpenseModel(id: '11', title: 'Lidl',            amount: 98.20,  category: 'Jedzenie',     date: DateTime(now.year, now.month, 18)),
-    ExpenseModel(id: '12', title: 'Spotify',         amount: 23.99,  category: 'Rozrywka',     date: DateTime(now.year, now.month, 20)),
-    ExpenseModel(id: '13', title: 'PKP Intercity',   amount: 89.00,  category: 'Transport',    date: DateTime(now.year, now.month, 22)),
-    ExpenseModel(id: '14', title: 'Restauracja',     amount: 112.00, category: 'Jedzenie',     date: DateTime(now.year, now.month, 24)),
-    ExpenseModel(id: '15', title: 'Allegro',         amount: 145.00, category: 'Zakupy',       date: DateTime(now.year, now.month, 25)),
-  ];
-});
+final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
-// Pomocniczy provider — suma per kategoria
-final expensesByCategoryProvider = Provider<Map<String, double>>((ref) {
-  final expenses = ref.watch(expensesProvider);
-  final Map<String, double> result = {};
-  for (final e in expenses) {
-    result[e.category] = (result[e.category] ?? 0) + e.amount;
+// Asynchroniczny Notifier pobierający historię z Pythona
+class ExpensesNotifier extends AsyncNotifier<List<ExpenseModel>> {
+  @override
+  Future<List<ExpenseModel>> build() async {
+    final api = ref.read(apiServiceProvider);
+
+    // Pobieramy dane z API
+    final data = await api.fetchTransactions();
+
+    // Mapujemy JSON z Pythona na Twojego ExpenseModel
+    return data.map((json) {
+      // 1. KULOODPORNA KATEGORIA
+      // Sprawdzamy, czy Python przysłał obiekt (Map), czy zwykły tekst (String)
+      String categoryName = 'Inne';
+      if (json['category'] is Map) {
+        categoryName = json['category']['name'] ?? 'Inne';
+      } else if (json['category'] is String) {
+        categoryName = json['category'];
+      } else if (json['category_name'] is String) {
+        categoryName = json['category_name'];
+      }
+
+      // 2. BEZPIECZNE ZWRACANIE
+      return ExpenseModel(
+        id:
+            json['id']?.toString() ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
+        title:
+            (json['description'] ?? json['title'] ?? json['name'] ?? 'Nieznana')
+                .toString(),
+        amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+        category: categoryName,
+        date: json['date'] != null
+            ? DateTime.tryParse(json['date'].toString()) ?? DateTime.now()
+            : DateTime.now(),
+      );
+    }).toList();
   }
-  return result;
+
+  Future<void> deleteExpense(String id) async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      // 1. Usuwamy z bazy Pythona
+      await api.deleteTransaction(id);
+
+      // 2. Odświeżamy listę na ekranie
+      ref.invalidateSelf();
+    } catch (e) {
+      print("Błąd usuwania: $e");
+    }
+  }
+
+  Future<void> addExpense(Map<String, dynamic> data) async {
+    final api = ref.read(apiServiceProvider);
+
+    // Wysyłamy do Pythona
+    await api.addTransaction(data);
+
+    // Odświeżamy listę – Riverpod sam pobierze zaktualizowane dane z bazy!
+    ref.invalidateSelf();
+  }
+}
+
+final expensesProvider =
+    AsyncNotifierProvider<ExpensesNotifier, List<ExpenseModel>>(
+      ExpensesNotifier.new,
+    );
+
+// Pomocniczy provider — suma per kategoria (teraz bezpieczny dla danych z sieci)
+final expensesByCategoryProvider = Provider<Map<String, double>>((ref) {
+  final expensesAsync = ref.watch(expensesProvider);
+
+  // Jesli mamy dane (zakończyło się ładowanie), to je przeliczamy
+  return expensesAsync.maybeWhen(
+    data: (expenses) {
+      final Map<String, double> result = {};
+      for (final e in expenses) {
+        result[e.category] = (result[e.category] ?? 0) + e.amount;
+      }
+      return result;
+    },
+    // Jeśli ładuje się lub jest błąd, zwracamy pustą mapę
+    orElse: () => {},
+  );
+});
+// ── Pobieranie prawdziwych kategorii z backendu ──
+final categoriesProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
+  final api = ref.read(apiServiceProvider);
+  final data = await api.fetchCategories();
+
+  // Konwertujemy List<dynamic> z Pythona na listę bezpiecznych map (słowników)
+  return List<Map<String, dynamic>>.from(data);
 });

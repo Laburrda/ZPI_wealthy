@@ -36,11 +36,24 @@ class SavingsNotifier extends AsyncNotifier<List<AssetModel>> {
   }
 
   Future<void> deleteAsset(String id) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (state.value != null) {
-      state = AsyncValue.data(
-        state.value!.where((asset) => asset.id != id).toList(),
-      );
+    try {
+      // 1. Zabezpieczenie: upewniamy się, że mamy listę
+      final assets = state.value ?? [];
+
+      // 2. Szukamy naszego aktywa na liście, żeby poznać jego TYP
+      final assetToDeleteList = assets.where((a) => a.id == id).toList();
+      if (assetToDeleteList.isEmpty) return; // Nie znaleziono
+
+      final assetToDelete = assetToDeleteList.first;
+
+      // 3. Prawdziwe usunięcie z bazy (TERAZ PODAJEMY ID ORAZ TYP!)
+      await ref.read(apiServiceProvider).deleteSaving(id, assetToDelete.type);
+
+      // 4. Jeśli serwer potwierdził usunięcie, wyrzucamy kafelek z ekranu
+      state = AsyncValue.data(assets.where((asset) => asset.id != id).toList());
+    } catch (e) {
+      // W razie problemów wyświetlamy błąd w konsoli
+      print('Błąd usuwania oszczędności: $e');
     }
   }
 
@@ -48,7 +61,9 @@ class SavingsNotifier extends AsyncNotifier<List<AssetModel>> {
     await Future.delayed(const Duration(milliseconds: 500));
     if (state.value != null) {
       state = AsyncValue.data(
-        state.value!.map((a) => a.id == updatedAsset.id ? updatedAsset : a).toList(),
+        state.value!
+            .map((a) => a.id == updatedAsset.id ? updatedAsset : a)
+            .toList(),
       );
     }
   }
@@ -57,7 +72,7 @@ class SavingsNotifier extends AsyncNotifier<List<AssetModel>> {
 // Przefiltrowana lista — używana przez ekran
 final filteredSavingsProvider = Provider<AsyncValue<List<AssetModel>>>((ref) {
   final savings = ref.watch(savingsProvider);
-  final filter  = ref.watch(savingsTypeFilterProvider);
+  final filter = ref.watch(savingsTypeFilterProvider);
 
   return savings.whenData((assets) {
     if (filter == null) return assets;

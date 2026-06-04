@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/asset_model.dart';
 import '../providers/savings_provider.dart';
 import '../providers/investments_provider.dart';
+import '../services/api_service.dart';
 
 // Typy oszczędności
 const _savingsTypes = ['savings', 'ppk', 'ike', 'ikze'];
@@ -79,38 +80,114 @@ class _AddAssetScreenState extends ConsumerState<AddAssetScreen> {
     super.dispose();
   }
 
-  void _submitData() {
+  Future<void> _submitData() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final asset = AssetModel(
-      id:
-          widget.assetToEdit?.id ??
-          DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _nameController.text.trim(),
-      type: widget.isInvestment
-          ? _selectedInvestmentType
-          : _selectedSavingsType,
-      institution: _institutionController.text.trim(),
-      currency: _selectedCurrency,
-      value: double.parse(_amountController.text.trim()),
-    );
+    try {
+      final api = ApiService();
+      final amount = double.parse(_amountController.text.trim());
+      final name = _nameController.text.trim();
+      final institution = _institutionController.text.trim();
+      final instName = institution.isNotEmpty ? institution : 'Brak danych';
 
-    if (widget.isInvestment) {
-      if (widget.assetToEdit != null) {
-        // edycja inwestycji — można rozszerzyć gdy investments_provider będzie miał updateInvestment
-        ref.read(investmentsProvider.notifier).addInvestment(asset);
+      if (widget.isInvestment) {
+        // --- 1. ZWROTNICA DLA INWESTYCJI ---
+        if (_selectedInvestmentType == 'crypto') {
+          // KRYPTO
+          final cryptoData = {
+            "name": name,
+            "currency": _selectedCurrency,
+            "institution_name": instName,
+            "wallet_address": "MANUAL",
+            "current_value": amount,
+          };
+          await api.addCrypto(cryptoData);
+        } else {
+          // AKCJE, ETF, CFD, OBLIGACJE (Holdings)
+
+          // Baza dla wszystkich aktywów na giełdzie
+          Map<String, dynamic> investmentData = {
+            "ticker": "MANUAL",
+            "name": name,
+            "quantity": 1.0,
+            "avg_purchase_price": amount,
+            "currency": _selectedCurrency,
+            "current_price": amount,
+            "asset_class": _selectedInvestmentType == 'investment'
+                ? 'stock'
+                : _selectedInvestmentType,
+            "ike_account_id": null,
+          };
+
+          // Specjalne wymagania dla Obligacji (BOND)
+          if (_selectedInvestmentType == 'bond') {
+            investmentData["face_value"] = amount;
+            investmentData["coupon_rate"] = 0.0;
+            investmentData["maturity_date"] =
+                "2030-01-01T00:00:00Z"; // Wymagana data
+            investmentData["issuer"] = instName; // Wymagany emitent
+          }
+          // Specjalne wymagania dla kontraktów (CFD)
+          else if (_selectedInvestmentType == 'cfd') {
+            investmentData["leverage"] = 1.0; // Wymagana dźwignia
+            investmentData["margin_used"] = amount; // Wymagany depozyt
+            investmentData["direction"] = "LONG"; // Wymagany kierunek
+          }
+
+          // Wysyłamy do Pythona!
+          await api.addInvestment(investmentData, _selectedInvestmentType);
+        }
+
+        ref.invalidate(investmentsProvider);
       } else {
-        ref.read(investmentsProvider.notifier).addInvestment(asset);
+        // --- 2. ZWROTNICA DLA OSZCZĘDNOŚCI ---
+        if (_selectedSavingsType == 'ppk') {
+          await api.addPpk({
+            "name": name,
+            "currency": _selectedCurrency,
+            "institution_name": instName,
+            "fund_name": instName,
+            "current_value": amount,
+          });
+        } else if (_selectedSavingsType == 'ike') {
+          await api.addIke({
+            "name": name,
+            "currency": _selectedCurrency,
+            "institution_name": instName,
+            "annual_limit": 23754.0,
+            "cash_balance": amount,
+          });
+        } else if (_selectedSavingsType == 'ikze') {
+          await api.addIkze({
+            "name": name,
+            "currency": _selectedCurrency,
+            "institution_name": instName,
+            "annual_limit": 9388.8,
+            "cash_balance": amount,
+          });
+        } else {
+          await api.addSaving({
+            "name": name,
+            "currency": _selectedCurrency,
+            "institution_name": instName,
+            "interest_rate": 0.0,
+            "current_balance": amount,
+          });
+        }
+        ref.invalidate(savingsProvider);
       }
-    } else {
-      if (widget.assetToEdit != null) {
-        ref.read(savingsProvider.notifier).updateAsset(asset);
-      } else {
-        ref.read(savingsProvider.notifier).addAsset(asset);
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Błąd serwera: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
       }
     }
-
-    Navigator.pop(context);
   }
 
   @override
