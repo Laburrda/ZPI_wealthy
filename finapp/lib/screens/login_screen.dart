@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
+import 'register_screen.dart';
 
 // Importujemy plik main.dart, w którym żyje nasz główny szkielet z dolnym paskiem
 import '../main.dart';
@@ -41,9 +42,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .login(_emailController.text.trim(), _passwordController.text.trim());
 
       if (mounted) {
-        Navigator.pushReplacement(
+        // Usuwa całą wcześniejszą historię i wchodzi do aplikacji
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MainNavigationShell()),
+          (route) => false, // false oznacza "usuń absolutnie wszystkie ekrany pod spodem"
         );
       }
     } catch (e) {
@@ -62,6 +65,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent, // Przezroczyste tło
+        elevation: 0, // Brak cienia
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+          onPressed: () {
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -193,9 +206,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 16),
 
-                  // NOWOŚĆ: Przycisk rejestracji (nieklikalny placeholder)
+                  //Przycisk rejestracji 
                   TextButton(
-                    onPressed: null, // Ustawienie na null wyłącza przycisk
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RegisterScreen(),
+                        ),
+                      );
+                    }, // Ustawienie na null wyłącza przycisk
                     child: const Text(
                       'Nie masz jeszcze konta? Zarejestruj się!',
                       style: TextStyle(

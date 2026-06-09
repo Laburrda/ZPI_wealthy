@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Importujemy wszystkie utworzone ekrany
-import 'screens/login_screen.dart'; // POPRAWKA: Dodany import ekranu logowania
+import 'screens/landing_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/savings_screen.dart';
 import 'screens/investments_screen.dart';
 import 'screens/retirement_screen.dart';
 import 'screens/expenses_screen.dart';
+import 'screens/account_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: FinApp()));
@@ -39,7 +40,7 @@ class FinApp extends StatelessWidget {
         ),
       ),
       // POPRAWKA: Ustawiamy LoginScreen jako punkt startowy zamiast MainNavigationShell
-      home: const LoginScreen(),
+      home: const LandingScreen(),
     );
   }
 }
@@ -76,7 +77,23 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_currentIndex])),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text(_titles[_currentIndex]),
+
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined, size: 30, color: Colors.tealAccent),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AccountScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 8), // Mały margines od krawędzi ekranu
+        ],
+      ),
       body:
           _screens[_currentIndex], // Wyświetlamy ekran odpowiadający indeksowi
       bottomNavigationBar: BottomNavigationBar(

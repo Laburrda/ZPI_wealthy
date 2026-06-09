@@ -5,6 +5,7 @@ import '../services/api_service.dart'; // Podpinamy nasz serwis!
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
 // Asynchroniczny Notifier pobierający historię z Pythona
+// Asynchroniczny Notifier pobierający historię z Pythona
 class ExpensesNotifier extends AsyncNotifier<List<ExpenseModel>> {
   @override
   Future<List<ExpenseModel>> build() async {
@@ -64,6 +65,22 @@ class ExpensesNotifier extends AsyncNotifier<List<ExpenseModel>> {
 
     // Odświeżamy listę – Riverpod sam pobierze zaktualizowane dane z bazy!
     ref.invalidateSelf();
+  }
+
+  // ── NOWA METODA: EDYCJA WYDATKU ──
+  Future<void> updateExpense(String id, Map<String, dynamic> data) async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      
+      // Wysyłamy zaktualizowane dane do Pythona
+      await api.updateTransaction(id, data);
+
+      // Odświeżamy listę, żeby UI zassał nowe dane z bazy
+      ref.invalidateSelf();
+    } catch (e) {
+      print("Błąd aktualizacji: $e");
+      rethrow; // Przekazujemy błąd wyżej, żeby UI (SnackBar) mógł go wyświetlić
+    }
   }
 }
 

@@ -4,3 +4,9 @@ venv/
 
 # Python cache
 __pycache__/
+
+# Ignorowane pliki baz danych i cache
+*.db
+*.db-shm
+*.db-wal
+yfinance-cache/

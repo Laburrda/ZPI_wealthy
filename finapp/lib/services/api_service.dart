@@ -43,6 +43,82 @@ class ApiService {
     }
   }
 
+  Future<String?> register({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    // UWAGA: Upewnij się, że końcówka adresu (endpoint) to faktycznie '/register' 
+    // lub zmień ją na taką, jaką masz w backendzie (np. '/auth/register').
+    final url = Uri.parse('$baseUrl/auth/register'); 
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          "email": email,
+          "password": password,
+          "full_name": fullName, // backend oczekuje podkreślenia
+        }),
+      );
+
+      // Status 200 lub 201 oznacza sukces
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        
+        // Zależnie od tego, czy backend przy rejestracji zwraca od razu token:
+        // Jeśli tak, przypisujemy go i zwracamy.
+        if (data.containsKey('access_token')) {
+          _token = data['access_token']; 
+          return _token;
+        }
+        
+        // Jeśli backend nie zwraca tokenu (np. każe się zalogować ręcznie po rejestracji), 
+        // możesz zwrócić cokolwiek lub wywołać od razu metodę login() wewnątrz tej funkcji.
+        return "success"; 
+      } else {
+        // Obsługa błędów (np. 400 Bad Request, e-mail zajęty)
+        final errorData = jsonDecode(response.body);
+        final errorMessage = errorData['detail'] ?? 'Nie udało się zarejestrować';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Metoda pobierająca dane profilu
+  Future<Map<String, dynamic>> getUserProfile() async {
+    final url = Uri.parse('$baseUrl/auth/me');
+    
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        // Pamiętaj, aby wysłać zapisany token! 
+        // (Upewnij się, że zmienna nazywa się tak jak w Twoim kodzie, np. _token)
+        'Authorization': 'Bearer $_token', 
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Zwracamy zdekodowany JSON (Map)
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Nie udało się pobrać danych użytkownika');
+    }
+  }
+
+  // Metoda czyszcząca zapisany token z pamięci API
+  void logout() {
+    _token = null;
+  }
+
   // =========================================================
   // OSZCZĘDNOŚCI (SAVINGS, PPK, IKE, IKZE)
   // =========================================================
@@ -178,7 +254,6 @@ class ApiService {
 
       List<AssetModel> allInvestments = [];
 
-      // 1. Giełda (Holdings)
       // 1. Giełda (Holdings)
       if (responses[0].statusCode == 200) {
         final List<dynamic> data = jsonDecode(
@@ -387,6 +462,42 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Błąd komunikacji: $e');
+    }
+  }
+
+  Future<void> updateTransaction(String id, Map<String, dynamic> payload) async {
+    // Upewnij się, że URL zgadza się z Twoim Swaggerem (np. /transactions/{id})
+    final url = Uri.parse('$baseUrl/transactions/$id');
+
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Nie udało się zaktualizować transakcji');
+    }
+  }
+
+  // ── NOWA METODA: DODAWANIE KATEGORII ──
+  Future<void> createCategory(Map<String, dynamic> payload) async {
+    final url = Uri.parse('$baseUrl/categories/'); // Upewnij się, że adres jest poprawny
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Nie udało się utworzyć kategorii');
     }
   }
 }
